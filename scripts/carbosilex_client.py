@@ -80,7 +80,12 @@ class CarbosilexClient:
             "Accept": "application/json",
         }
         if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
+            if self.api_key.startswith("sk_live_"):
+                # It's an API Key generated via /api-keys endpoint
+                headers["X-API-Key"] = self.api_key
+            else:
+                # It's a JWT token (e.g. from SIWE login) or legacy wallet
+                headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
     def _url(self, path: str) -> str:

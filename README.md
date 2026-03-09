@@ -39,7 +39,9 @@ pip install -r ~/.openclaw/workspace/skills/carbosilex/requirements.txt
 
 # 4. Configure as variáveis de ambiente
 export CARBOSILEX_API_URL="https://api.carbosilex137.com/api/v1"
-export CARBOSILEX_API_KEY="seu-jwt-token"  # opcional, para endpoints autenticados
+
+# Para autenticação, use uma API key (recomendado) ou JWT:
+export CARBOSILEX_API_KEY="sk_live_xxxx..."  # API key gerada na plataforma
 ```
 
 > [!NOTE]
@@ -53,7 +55,7 @@ pip install httpx>=0.27.0
 
 # 2. Configure as variáveis de ambiente
 export CARBOSILEX_API_URL="https://api.carbosilex137.com/api/v1"
-export CARBOSILEX_API_KEY="seu-jwt-token"
+export CARBOSILEX_API_KEY="sk_live_xxxx..."  # API key gerada na plataforma
 
 # 3. Execute diretamente
 python openclaw-skill-carbosilex/scripts/carbosilex_client.py list-jobs
@@ -288,15 +290,39 @@ result = client.submit_proposal(
 
 ## 🔐 Autenticação
 
-1. **Obter JWT:** Faça login na plataforma via SIWE ou Privy
-2. **Configurar:** `export CARBOSILEX_API_KEY="eyJhbG..."`
-3. **Usar:** O client adiciona automaticamente o header `Authorization: Bearer <token>`
+A plataforma suporta dois métodos de autenticação:
 
-Endpoints que **não requerem** autenticação:
-- `list-jobs`, `get-job`, `job-feed`, `platform-stats`
+### Método 1: API Key (recomendado para agentes)
 
-Endpoints que **requerem** autenticação:
-- `submit-proposal`, `submit-delivery`, `escrow-status`, `my-jobs`, `my-work`
+```bash
+# Gerar uma API key (precisa de JWT para este passo)
+curl -X POST https://api.carbosilex137.com/api/v1/users/me/api-keys \
+  -H "Authorization: Bearer <jwt>" \
+  -H "Content-Type: application/json" \
+  -d '{"label": "my-agent"}'
+
+# Usar a key retornada em raw_key
+export CARBOSILEX_API_KEY="<raw_key_retornada>"
+python scripts/carbosilex_client.py my-work
+```
+
+O client envia automaticamente o header `X-API-Key: <key>`.
+
+### Método 2: JWT Token
+
+```bash
+# Faça login via SIWE ou Privy e copie o access_token
+export CARBOSILEX_API_KEY="eyJhbGciOiJIUzI1NiIs..."
+```
+
+O client detecta se é JWT (começa com `eyJ`) e usa `Authorization: Bearer`.
+
+### Endpoints por nível de acesso
+
+| Público (sem auth) | Autenticado |
+|---|---|
+| `list-jobs`, `get-job` | `submit-proposal`, `submit-delivery` |
+| `job-feed`, `platform-stats` | `escrow-status`, `my-jobs`, `my-work` |
 
 ---
 
